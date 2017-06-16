@@ -1,5 +1,4 @@
 '''Residual block by Keunwoo Choi (keunwoo.choi@qmul.ac.uk)
-
 It is based on "Deep Residual Learning for Image Recognition" (http://arxiv.org/abs/1512.03385)
 and "Identity Mappings in Deep Residual Networks" (http://arxiv.org/abs/1603.05027).
 '''
@@ -20,7 +19,6 @@ def building_residual_block(input_shape, n_feature_maps, kernel_sizes=None, n_sk
     [1] Building block of layers for residual learning.
         Code based on https://github.com/ndronen/modeling/blob/master/modeling/residual.py
         , but modification of (perhaps) incorrect relu(f)+x thing and it's for conv layer
-
     [2] ----This comment used to be valid. Now it is not, but I failed to track since when.----
         ----Now the comment below is incorrect, I am using strided convolution here.----
         ----invalid comment------------------------------------------------------------------------------
@@ -32,12 +30,9 @@ def building_residual_block(input_shape, n_feature_maps, kernel_sizes=None, n_sk
         |        (Then the following Conv2D is not the first layer of this container anymore,           | 
         |         so you can remove the input_shape in the line 101, the line with comment #'OPTION' )  | 
         -------------------------------------------------------------------------------------------------
-
     [3] It can be used for both cases whether it subsamples or not.
-
     [4] In the short-cut connection, I used 1x1 convolution to increase #channel.
         It occurs when is_expand_channels == True 
-
     input_shape = (None, num_channel, height, width) 
     n_feature_maps: number of feature maps. In ResidualNet it increases whenever image is downsampled.
     kernel_sizes : list or tuple, (3,3) or [3,3] for example
@@ -63,7 +58,8 @@ def building_residual_block(input_shape, n_feature_maps, kernel_sizes=None, n_sk
     if is_subsample: # subsample (+ channel expansion if needed)
         shortcut_y = Convolution2D(n_feature_maps, kernel_sizes[0], kernel_sizes[1], 
                                     subsample=subsample,
-                                    border_mode='same')(x)
+                                    border_mode='valid')(x)
+        print('POOLED11111!!!!!',shortcut_y.get_shape())
     else: # channel expansion only (e.g. the very first layer of the whole networks)
         if is_expand_channels:
             shortcut_y = Convolution2D(n_feature_maps, 1, 1, border_mode='same')(x)
@@ -73,12 +69,13 @@ def building_residual_block(input_shape, n_feature_maps, kernel_sizes=None, n_sk
     # ***** CONVOLUTION_PATH ***** 
     conv_y = x
     for i in range(n_skip):
-        conv_y = BatchNormalization(axis=1, mode=2)(conv_y)        
+        conv_y = BatchNormalization(axis=1)(conv_y)        
         conv_y = Activation('relu')(conv_y)
         if i==0 and is_subsample: # [Subsample at layer 0 if needed]
             conv_y = Convolution2D(n_feature_maps, kernel_row, kernel_col,
                                     subsample=subsample,
-                                    border_mode='same')(conv_y)  
+                                    border_mode='valid')(conv_y)
+            print('POOLED222222!!!!!',conv_y.get_shape())
         else:        
             conv_y = Convolution2D(n_feature_maps, kernel_row, kernel_col, border_mode='same')(conv_y)
     # output
@@ -86,4 +83,3 @@ def building_residual_block(input_shape, n_feature_maps, kernel_sizes=None, n_sk
     block = Model(input=x, output=y)
     print ('        -- model was built.')
     return block
-    
